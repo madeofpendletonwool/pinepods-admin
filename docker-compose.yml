@@ -1,0 +1,61 @@
+services:
+  pinepods-admin:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DEBUG=false
+      - DB_TYPE=sqlite
+      - DB_NAME=/app/data/forms.db
+      - NTFY_ENABLED=true
+      - NTFY_URL=https://ntfy.sh
+      - NTFY_TOPIC=pinepods-admin
+      # Add your own environment variables here
+      # - NTFY_TOKEN=your_ntfy_token
+      # - SMTP_HOST=smtp.gmail.com
+      # - SMTP_USERNAME=your_email@gmail.com
+      # - SMTP_PASSWORD=your_app_password
+      # - SMTP_FROM=your_email@gmail.com
+      # - GOOGLE_SERVICE_ACCOUNT_FILE=/app/config/service-account.json
+      # - GOOGLE_PACKAGE_NAME=com.your.app
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./data:/app/data
+      - ./submissions:/app/submissions
+      - ./templates:/app/templates:ro
+      - ./static:/app/static:ro
+      # Mount Google service account file if you have one
+      # - ./config/service-account.json:/app/config/service-account.json:ro
+    command: ["-config", "/app/configs/config.yaml"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: PostgreSQL database (uncomment if you want to use PostgreSQL)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: pinepods_forms
+  #     POSTGRES_USER: forms_user
+  #     POSTGRES_PASSWORD: forms_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+  # Optional: Redis for caching and rate limiting (future enhancement)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:

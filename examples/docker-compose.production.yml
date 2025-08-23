@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  pinepods-admin:
+    image: pinepods-admin:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DEBUG=false
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=pinepods_forms
+      - DB_USER=forms_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - NTFY_ENABLED=true
+      - NTFY_URL=https://ntfy.sh
+      - NTFY_TOPIC=${NTFY_TOPIC}
+      - NTFY_TOKEN=${NTFY_TOKEN}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - GOOGLE_SERVICE_ACCOUNT_FILE=/app/config/service-account.json
+      - GOOGLE_PACKAGE_NAME=${GOOGLE_PACKAGE_NAME}
+      - CORS_ORIGINS=https://docs.pinepods.online,https://pinepods.online
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./submissions:/app/submissions
+      - ./templates:/app/templates:ro
+      - ./static:/app/static:ro
+      - ./config/service-account.json:/app/config/service-account.json:ro
+    command: ["-config", "/app/configs/config.yaml"]
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: pinepods_forms
+      POSTGRES_USER: forms_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forms_user -d pinepods_forms"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - pinepods-admin
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

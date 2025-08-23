@@ -1,0 +1,56 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go build program.
+/pinepods-admin
+/cmd/server/pinepods-admin
+
+# Go coverage files
+*.out
+
+# Go mod cache
+go.sum
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Application data
+data/
+submissions/
+logs/
+
+# Config files with secrets
+configs/production.yaml
+configs/local.yaml
+configs/*.local.yaml
+.env
+.env.local
+
+# Google service account
+config/service-account.json
+*.json
+
+# Docker volumes
+postgres_data/
+
+# Build artifacts
+/main
+/server
+
+# Temporary files
+*.tmp
+*.temp

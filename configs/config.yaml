@@ -1,0 +1,110 @@
+server:
+  port: "8080"
+  host: "0.0.0.0"
+  debug: false
+  cors_origins:
+    - "*"
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+
+database:
+  type: "sqlite"
+  database: "./data/forms.db"
+
+email:
+  provider: "smtp"
+  smtp:
+    host: "smtp.gmail.com"
+    port: 587
+    username: ""  # Set via environment variable SMTP_USERNAME
+    password: ""  # Set via environment variable SMTP_PASSWORD
+    from: ""      # Set via environment variable SMTP_FROM
+
+notifications:
+  ntfy:
+    enabled: true
+    url: "https://ntfy.sh"
+    topic: "pinepods-forms"
+    token: ""     # Set via environment variable NTFY_TOKEN
+
+forms:
+  storage_dir: "./submissions"
+  forms:
+    internal-testing-signup:
+      name: "PinePods Internal Testing Sign-up"
+      description: "Sign up for early access to PinePods beta versions"
+      fields:
+        - name: "name"
+          type: "text"
+          required: true
+          label: "Full Name"
+          placeholder: "Enter your full name"
+        - name: "email"
+          type: "email"
+          required: true
+          label: "Email Address"
+          placeholder: "Enter your email address"
+          validation: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      actions:
+        - type: "google_play_add_tester"
+          config:
+            track: "internal"
+        - type: "send_email"
+          config:
+            template: "internal-testing"
+        - type: "log"
+          config:
+            message: "New internal testing signup processed"
+      validation:
+        max_submissions_per_hour: 10
+        require_captcha: false
+      email:
+        enabled: true
+        template: "internal-testing"
+        subject: "Welcome to PinePods Internal Testing!"
+        send_confirmation: true
+
+    contact-form:
+      name: "Contact Form"
+      description: "General contact form for inquiries"
+      fields:
+        - name: "name"
+          type: "text"
+          required: true
+          label: "Name"
+          placeholder: "Your name"
+        - name: "email"
+          type: "email"
+          required: true
+          label: "Email"
+          placeholder: "your.email@example.com"
+        - name: "subject"
+          type: "text"
+          required: true
+          label: "Subject"
+          placeholder: "What is this about?"
+        - name: "message"
+          type: "textarea"
+          required: true
+          label: "Message"
+          placeholder: "Your message here..."
+      actions:
+        - type: "send_email"
+          config:
+            template: "confirmation"
+        - type: "log"
+          config:
+            message: "New contact form submission"
+      validation:
+        max_submissions_per_hour: 5
+        require_captcha: false
+      email:
+        enabled: true
+        template: "confirmation"
+        subject: "Thank you for contacting us!"
+        send_confirmation: true
+
+google_play:
+  service_account_file: ""  # Set via environment variable GOOGLE_SERVICE_ACCOUNT_FILE
+  package_name: ""          # Set via environment variable GOOGLE_PACKAGE_NAME
