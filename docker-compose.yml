@@ -18,7 +18,7 @@ services:
       # - SMTP_USERNAME=your_email@gmail.com
       # - SMTP_PASSWORD=your_app_password
       # - SMTP_FROM=your_email@gmail.com
-      # - GOOGLE_SERVICE_ACCOUNT_FILE=/app/config/service-account.json
+      - GOOGLE_SERVICE_ACCOUNT_FILE=/app/config/service-account.json
       # - GOOGLE_PACKAGE_NAME=com.your.app
     volumes:
       - ./configs:/app/configs:ro
@@ -27,7 +27,7 @@ services:
       - ./templates:/app/templates:ro
       - ./static:/app/static:ro
       # Mount Google service account file if you have one
-      # - ./config/service-account.json:/app/config/service-account.json:ro
+      - ./config:/app/config/
     command: ["-config", "/app/configs/config.yaml"]
     restart: unless-stopped
     healthcheck:

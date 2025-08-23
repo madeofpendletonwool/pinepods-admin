@@ -39,7 +39,7 @@ func (fs *FormService) initDatabase() error {
 	switch fs.config.Database.Type {
 	case "sqlite":
 		connectionString = fs.config.Database.Database
-		fs.db, err = sql.Open("sqlite3", connectionString)
+		fs.db, err = sql.Open("sqlite", connectionString)
 	case "postgres":
 		connectionString = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 			fs.config.Database.Host,
