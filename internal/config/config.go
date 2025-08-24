@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -194,6 +195,11 @@ func (c *Config) loadFromEnv() {
 	}
 	if smtpHost := os.Getenv("SMTP_HOST"); smtpHost != "" {
 		c.Email.SMTP.Host = smtpHost
+	}
+	if smtpPort := os.Getenv("SMTP_PORT"); smtpPort != "" {
+		if port, err := strconv.Atoi(smtpPort); err == nil {
+			c.Email.SMTP.Port = port
+		}
 	}
 	if smtpUser := os.Getenv("SMTP_USERNAME"); smtpUser != "" {
 		c.Email.SMTP.Username = smtpUser
