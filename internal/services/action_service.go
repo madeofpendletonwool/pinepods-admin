@@ -109,7 +109,10 @@ func (as *ActionService) addGooglePlayTester(submission *models.FormSubmission, 
 
 	packageName := as.config.GooglePlay.PackageName
 
-	// Create a new edit
+	// For internal testing, we need to add the user to the tester list
+	// Internal testing uses a different API endpoint - we need to use the Internal Testing API
+	
+	// Create a new edit for managing testers
 	edit := &androidpublisher.AppEdit{}
 	editCall := service.Edits.Insert(packageName, edit)
 	insertedEdit, err := editCall.Do()
@@ -121,48 +124,46 @@ func (as *ActionService) addGooglePlayTester(submission *models.FormSubmission, 
 
 	editId := insertedEdit.Id
 
-	// Add tester to the track
-	testerRequest := &androidpublisher.Testers{
-		GoogleGroups: []string{},
-	}
-
-	// Check if we should add to existing testers or replace
+	// Get existing testers for the internal track
 	existingTesters, err := service.Edits.Testers.Get(packageName, editId, track).Do()
-	if err == nil && existingTesters != nil {
-		// Add to existing testers
-		testerRequest.GoogleGroups = existingTesters.GoogleGroups
-	}
-
-	// Add the new tester email (Google Play uses individual emails for internal testing)
-	// For internal testing, we need to add the user via the track configuration
-	trackRelease := &androidpublisher.TrackRelease{
-		Name: fmt.Sprintf("Internal Testing Release - %s", time.Now().Format("2006-01-02")),
-		Status: "completed",
-		UserFraction: 1.0,
-	}
-
-	track_obj := &androidpublisher.Track{
-		Track: track,
-		Releases: []*androidpublisher.TrackRelease{trackRelease},
-	}
-
-	// Update the track
-	_, err = service.Edits.Tracks.Update(packageName, editId, track, track_obj).Do()
 	if err != nil {
-		result.Error = fmt.Sprintf("Failed to update track: %v", err)
-		result.Message = "Failed to update Google Play track"
+		// If no testers exist yet, create empty list
+		existingTesters = &androidpublisher.Testers{
+			GoogleGroups: []string{},
+		}
+	}
+
+	// Add the new tester email to the existing list
+	// For internal testing, individual emails are added directly
+	newTesterList := existingTesters.GoogleGroups
+	
+	// Check if email is already in the list (avoid duplicates)
+	emailAlreadyExists := false
+	for _, existingEmail := range newTesterList {
+		if existingEmail == email {
+			emailAlreadyExists = true
+			break
+		}
+	}
+	
+	if !emailAlreadyExists {
+		newTesterList = append(newTesterList, email)
+	}
+
+	// Update the testers list
+	updatedTesters := &androidpublisher.Testers{
+		GoogleGroups: newTesterList,
+	}
+
+	_, err = service.Edits.Testers.Update(packageName, editId, track, updatedTesters).Do()
+	if err != nil {
+		result.Error = fmt.Sprintf("Failed to add tester: %v", err)
+		result.Message = "Failed to add user to internal testing"
 		
 		// Clean up the edit
 		service.Edits.Delete(packageName, editId).Do()
 		return result
 	}
-
-	// For internal testing, we need to manage testers differently
-	// The testers are typically managed through the Google Play Console UI or through a different API endpoint
-	// For now, we'll add them to the internal testing track and let Google handle the invitations
-
-	// Note: The actual tester invitation is handled by Google Play Console automatically
-	// when users are added to internal testing tracks
 
 	// Commit the edit
 	_, err = service.Edits.Commit(packageName, editId).Do()
