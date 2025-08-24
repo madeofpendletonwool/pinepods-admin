@@ -219,13 +219,6 @@ func (es *EmailService) sendEmail(emailData EmailData) error {
 }
 
 func (es *EmailService) sendSMTPEmail(emailData EmailData) error {
-	// SMTP authentication
-	auth := smtp.PlainAuth("",
-		es.config.Email.SMTP.Username,
-		es.config.Email.SMTP.Password,
-		es.config.Email.SMTP.Host,
-	)
-
 	// Email headers and body
 	var contentType string
 	if emailData.IsHTML {
@@ -250,6 +243,18 @@ Content-Type: %s
 
 	// Send email
 	addr := fmt.Sprintf("%s:%d", es.config.Email.SMTP.Host, es.config.Email.SMTP.Port)
+	
+	// Check if we need authentication (for production SMTP servers)
+	var auth smtp.Auth
+	if es.config.Email.SMTP.Username != "" && es.config.Email.SMTP.Password != "" {
+		auth = smtp.PlainAuth("",
+			es.config.Email.SMTP.Username,
+			es.config.Email.SMTP.Password,
+			es.config.Email.SMTP.Host,
+		)
+	}
+	// For MailHog and other test servers, auth can be nil
+
 	err := smtp.SendMail(addr, auth, es.config.Email.SMTP.From, []string{emailData.To}, []byte(message))
 	if err != nil {
 		return fmt.Errorf("failed to send SMTP email: %w", err)
