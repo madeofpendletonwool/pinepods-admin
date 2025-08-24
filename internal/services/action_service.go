@@ -71,8 +71,12 @@ func (as *ActionService) addGooglePlayTester(submission *models.FormSubmission, 
 	}
 
 	// Check if Google Play is configured
+	fmt.Printf("[DEBUG] Google Play Config - ServiceAccountFile: '%s', PackageName: '%s'\n", 
+		as.config.GooglePlay.ServiceAccountFile, as.config.GooglePlay.PackageName)
+	
 	if as.config.GooglePlay.ServiceAccountFile == "" || as.config.GooglePlay.PackageName == "" {
-		result.Error = "Google Play Console not configured (missing service account file or package name)"
+		result.Error = fmt.Sprintf("Google Play Console not configured (ServiceAccountFile: '%s', PackageName: '%s')", 
+			as.config.GooglePlay.ServiceAccountFile, as.config.GooglePlay.PackageName)
 		result.Message = "Google Play Console configuration missing"
 		return result
 	}
