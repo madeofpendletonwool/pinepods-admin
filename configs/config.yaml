@@ -46,6 +46,21 @@ forms:
           label: "Email Address"
           placeholder: "Enter your email address"
           validation: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        - name: "platform"
+          type: "select"
+          required: true
+          label: "Platform"
+          placeholder: "android"
+        - name: "wantsNews"
+          type: "boolean"
+          required: false
+          label: "Wants News Updates"
+          placeholder: "false"
+        - name: "newsEmail"
+          type: "email"
+          required: false
+          label: "News Email Address"
+          placeholder: "Optional news email"
       actions:
         - type: "google_play_add_tester"
           config:

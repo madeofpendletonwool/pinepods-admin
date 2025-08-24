@@ -73,7 +73,21 @@ func (ns *NotificationService) SendSubmissionNotification(submission *models.For
 	// Format submission data for display
 	dataStr := ""
 	for key, value := range submission.Data {
-		dataStr += fmt.Sprintf("%s: %v\n", key, value)
+		if key == "platform" {
+			platform := "Android"
+			if value == "ios" {
+				platform = "iOS (TestFlight)"
+			}
+			dataStr += fmt.Sprintf("%s: %s\n", key, platform)
+		} else if key == "wantsNews" {
+			wants := "No"
+			if value == true || value == "true" {
+				wants = "Yes"
+			}
+			dataStr += fmt.Sprintf("News Updates: %s\n", wants)
+		} else {
+			dataStr += fmt.Sprintf("%s: %v\n", key, value)
+		}
 	}
 
 	message := fmt.Sprintf(`%s
