@@ -228,7 +228,10 @@ func (s *Server) sendWelcomeEmail(c *gin.Context) {
 		Email        string `json:"email" binding:"required"`
 	}
 	
+	fmt.Printf("[DEBUG] Received welcome email request: %+v\n", c.Request.Body)
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Printf("[ERROR] Failed to bind JSON: %v\n", err)
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Success: false,
 			Error:   "Invalid request format: " + err.Error(),
@@ -237,9 +240,12 @@ func (s *Server) sendWelcomeEmail(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("[DEBUG] Parsed request: SubmissionID=%s, Email=%s\n", req.SubmissionID, req.Email)
+
 	// Get the submission to verify it exists and get form config
 	submission, err := s.formService.GetSubmission(req.SubmissionID)
 	if err != nil {
+		fmt.Printf("[ERROR] Failed to get submission %s: %v\n", req.SubmissionID, err)
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
 			Success: false,
 			Error:   "Submission not found",
@@ -248,9 +254,12 @@ func (s *Server) sendWelcomeEmail(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("[DEBUG] Found submission: %+v\n", submission)
+
 	// Get form config
 	formConfig, exists := s.config.Forms.Forms[submission.FormID]
 	if !exists {
+		fmt.Printf("[ERROR] Form config not found for FormID: %s\n", submission.FormID)
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
 			Success: false,
 			Error:   "Form configuration not found",
@@ -259,10 +268,15 @@ func (s *Server) sendWelcomeEmail(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("[DEBUG] Found form config: %+v\n", formConfig)
+	fmt.Printf("[DEBUG] SMTP Config: Host=%s, Port=%d, From=%s\n", 
+		s.config.Email.SMTP.Host, s.config.Email.SMTP.Port, s.config.Email.SMTP.From)
+
 	// Send welcome email
 	emailService := services.NewEmailService(s.config)
 	err = emailService.SendWelcomeEmail(submission, formConfig, req.Email)
 	if err != nil {
+		fmt.Printf("[ERROR] Failed to send welcome email: %v\n", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Success: false,
 			Error:   "Failed to send welcome email: " + err.Error(),
@@ -271,6 +285,7 @@ func (s *Server) sendWelcomeEmail(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("[SUCCESS] Welcome email sent to %s\n", req.Email)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": fmt.Sprintf("Welcome email sent to %s", req.Email),
