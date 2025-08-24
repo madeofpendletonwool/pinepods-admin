@@ -116,6 +116,7 @@ func (s *Server) setupRoutes() {
 			admin.GET("/submissions/:id", s.getSubmission)
 			admin.DELETE("/submissions/:id", s.deleteSubmission)
 			admin.POST("/submissions/:id/reprocess", s.reprocessSubmission)
+			admin.POST("/send-welcome-email", s.sendWelcomeEmail)
 		}
 	}
 

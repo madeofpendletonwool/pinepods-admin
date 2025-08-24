@@ -1,14 +1,11 @@
 package services
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/madeofpendletonwool/pinepods-admin/internal/config"
 	"github.com/madeofpendletonwool/pinepods-admin/internal/models"
-	"google.golang.org/api/androidpublisher/v3"
-	"google.golang.org/api/option"
 )
 
 type ActionService struct {
@@ -67,125 +64,22 @@ func (as *ActionService) executeAction(submission *models.FormSubmission, action
 func (as *ActionService) addGooglePlayTester(submission *models.FormSubmission, actionConfig config.ActionConfig) models.ActionResult {
 	result := models.ActionResult{
 		ActionType: "google_play_add_tester",
-		Success:    false,
+		Success:    true,
+		Message:    "Tester details logged for manual addition to Google Play Console",
 	}
 
-	// Check if Google Play is configured
-	fmt.Printf("[DEBUG] Google Play Config - ServiceAccountFile: '%s', PackageName: '%s'\n", 
-		as.config.GooglePlay.ServiceAccountFile, as.config.GooglePlay.PackageName)
-	
-	if as.config.GooglePlay.ServiceAccountFile == "" || as.config.GooglePlay.PackageName == "" {
-		result.Error = fmt.Sprintf("Google Play Console not configured (ServiceAccountFile: '%s', PackageName: '%s')", 
-			as.config.GooglePlay.ServiceAccountFile, as.config.GooglePlay.PackageName)
-		result.Message = "Google Play Console configuration missing"
-		return result
-	}
-
-	// Extract email from submission
+	// Extract email from submission for logging
 	emailService := NewEmailService(as.config)
 	email := emailService.GetEmailFromSubmission(submission)
 	if email == "" {
+		result.Success = false
 		result.Error = "No email address found in submission"
 		result.Message = "Email address required for Google Play testing"
 		return result
 	}
 
-	// Get track from action config (default to "internal")
-	track := "internal"
-	if trackConfig, exists := actionConfig.Config["track"]; exists {
-		if trackStr, ok := trackConfig.(string); ok {
-			track = trackStr
-		}
-	}
-
-	// Initialize Google Play API client
-	ctx := context.Background()
-	service, err := androidpublisher.NewService(ctx, option.WithCredentialsFile(as.config.GooglePlay.ServiceAccountFile))
-	if err != nil {
-		result.Error = fmt.Sprintf("Failed to initialize Google Play API: %v", err)
-		result.Message = "Google Play API initialization failed"
-		return result
-	}
-
-	packageName := as.config.GooglePlay.PackageName
-
-	// For internal testing, we need to add the user to the tester list
-	// Internal testing uses a different API endpoint - we need to use the Internal Testing API
-	
-	// Create a new edit for managing testers
-	edit := &androidpublisher.AppEdit{}
-	editCall := service.Edits.Insert(packageName, edit)
-	insertedEdit, err := editCall.Do()
-	if err != nil {
-		result.Error = fmt.Sprintf("Failed to create edit: %v", err)
-		result.Message = "Failed to create Google Play edit"
-		return result
-	}
-
-	editId := insertedEdit.Id
-
-	// Get existing testers for the internal track
-	existingTesters, err := service.Edits.Testers.Get(packageName, editId, track).Do()
-	if err != nil {
-		// If no testers exist yet, create empty list
-		existingTesters = &androidpublisher.Testers{
-			GoogleGroups: []string{},
-		}
-	}
-
-	// Add the new tester email to the existing list
-	// For internal testing, individual emails are added directly
-	newTesterList := existingTesters.GoogleGroups
-	
-	// Check if email is already in the list (avoid duplicates)
-	emailAlreadyExists := false
-	for _, existingEmail := range newTesterList {
-		if existingEmail == email {
-			emailAlreadyExists = true
-			break
-		}
-	}
-	
-	if !emailAlreadyExists {
-		newTesterList = append(newTesterList, email)
-	}
-
-	// Update the testers list
-	updatedTesters := &androidpublisher.Testers{
-		GoogleGroups: newTesterList,
-	}
-
-	_, err = service.Edits.Testers.Update(packageName, editId, track, updatedTesters).Do()
-	if err != nil {
-		result.Error = fmt.Sprintf("Failed to add tester: %v", err)
-		result.Message = "Failed to add user to internal testing"
-		
-		// Clean up the edit
-		service.Edits.Delete(packageName, editId).Do()
-		return result
-	}
-
-	// Commit the edit
-	_, err = service.Edits.Commit(packageName, editId).Do()
-	if err != nil {
-		result.Error = fmt.Sprintf("Failed to commit edit: %v", err)
-		result.Message = "Failed to commit Google Play changes"
-		return result
-	}
-
-	result.Success = true
-	result.Message = fmt.Sprintf("Successfully added %s to %s testing track", email, track)
-
-	// Send confirmation email if configured
-	if formConfig, exists := as.config.Forms.Forms[submission.FormID]; exists {
-		if formConfig.Email.Enabled && formConfig.Email.SendConfirmation {
-			emailService := NewEmailService(as.config)
-			if err := emailService.SendConfirmationEmail(submission, formConfig); err != nil {
-				// Don't fail the action if email fails, just log it
-				result.Message += fmt.Sprintf(" (Note: Confirmation email failed: %v)", err)
-			}
-		}
-	}
+	// Log the submission details - manual addition required
+	fmt.Printf("[MANUAL ACTION REQUIRED] Add %s to Google Play Internal Testing\n", email)
 
 	return result
 }

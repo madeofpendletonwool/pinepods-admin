@@ -290,3 +290,24 @@ func (es *EmailService) GetEmailFromSubmission(submission *models.FormSubmission
 	
 	return ""
 }
+
+// SendWelcomeEmail sends a welcome email for internal testing after manual approval
+func (es *EmailService) SendWelcomeEmail(submission *models.FormSubmission, formConfig config.FormConfig, email string) error {
+	// Use the internal-testing email template
+	body, err := es.renderEmailTemplate("internal-testing", EmailData{
+		Submission: submission,
+		FormConfig: formConfig,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to render welcome email template: %w", err)
+	}
+
+	emailData := EmailData{
+		To:      email,
+		Subject: "🎉 Welcome to PinePods Internal Testing - You're In!",
+		Body:    body,
+		IsHTML:  true,
+	}
+
+	return es.sendEmail(emailData)
+}

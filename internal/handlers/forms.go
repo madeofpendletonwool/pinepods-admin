@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/madeofpendletonwool/pinepods-admin/internal/models"
+	"github.com/madeofpendletonwool/pinepods-admin/internal/services"
 )
 
 func (s *Server) healthCheck(c *gin.Context) {
@@ -217,6 +219,61 @@ func (s *Server) reprocessSubmission(c *gin.Context) {
 		"success": true,
 		"message": "Submission reprocessed successfully",
 		"result":  result,
+	})
+}
+
+func (s *Server) sendWelcomeEmail(c *gin.Context) {
+	var req struct {
+		SubmissionID string `json:"submission_id" binding:"required"`
+		Email        string `json:"email" binding:"required"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Success: false,
+			Error:   "Invalid request format: " + err.Error(),
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	// Get the submission to verify it exists and get form config
+	submission, err := s.formService.GetSubmission(req.SubmissionID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Success: false,
+			Error:   "Submission not found",
+			Code:    http.StatusNotFound,
+		})
+		return
+	}
+
+	// Get form config
+	formConfig, exists := s.config.Forms.Forms[submission.FormID]
+	if !exists {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Success: false,
+			Error:   "Form configuration not found",
+			Code:    http.StatusNotFound,
+		})
+		return
+	}
+
+	// Send welcome email
+	emailService := services.NewEmailService(s.config)
+	err = emailService.SendWelcomeEmail(submission, formConfig, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Success: false,
+			Error:   "Failed to send welcome email: " + err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Welcome email sent to %s", req.Email),
 	})
 }
 
