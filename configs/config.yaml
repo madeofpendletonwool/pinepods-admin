@@ -65,6 +65,9 @@ forms:
         - type: "google_play_add_tester"
           config:
             track: "internal"
+        - type: "send_email"
+          config:
+            template: "internal-testing"
         - type: "log"
           config:
             message: "New internal testing signup processed"
