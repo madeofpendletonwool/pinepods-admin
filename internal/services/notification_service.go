@@ -130,25 +130,29 @@ Data:
 		Priority: priority,
 	}
 
-	// Add action button for internal testing submissions
+	// Add action button for internal testing submissions (only for Android)
 	if submission.FormID == "internal-testing-signup" && result.Success {
-		// Extract email from submission for the action button
-		email := ""
-		if emailVal, exists := submission.Data["email"]; exists {
-			if emailStr, ok := emailVal.(string); ok {
-				email = emailStr
+		// Check platform - only add action button for Android (iOS gets welcome email automatically)
+		platform, platformExists := submission.Data["platform"]
+		if platformExists && platform != "ios" {
+			// Extract email from submission for the action button
+			email := ""
+			if emailVal, exists := submission.Data["email"]; exists {
+				if emailStr, ok := emailVal.(string); ok {
+					email = emailStr
+				}
 			}
-		}
-		
-		if email != "" {
-			ntfyMsg.Actions = []NtfyAction{
-				{
-					Action: "http",
-					Label:  "Send Welcome Email",
-					URL:    "https://forms.pinepods.online/api/admin/send-welcome-email",
-					Method: "POST",
-					Body:   fmt.Sprintf(`{"submission_id": "%s", "email": "%s"}`, submission.ID, email),
-				},
+			
+			if email != "" {
+				ntfyMsg.Actions = []NtfyAction{
+					{
+						Action: "http",
+						Label:  "Send Welcome Email",
+						URL:    "https://forms.pinepods.online/api/admin/send-welcome-email",
+						Method: "POST",
+						Body:   fmt.Sprintf(`{"submission_id": "%s", "email": "%s"}`, submission.ID, email),
+					},
+				}
 			}
 		}
 	}

@@ -157,12 +157,14 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
             
             {{if eq (index .Submission.Data "platform") "ios"}}
             <div class="app-link" style="background-color: #007AFF;">
-                <p style="color: white; margin: 0; font-size: 18px; font-weight: bold;">
-                    🍎 iOS TestFlight Link Coming Soon!
-                </p>
-                <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">
-                    We'll send you the TestFlight invitation link as soon as it's available.
-                </p>
+                <a href="https://testflight.apple.com/join/8Aax2BcX" target="_blank" style="color: white; text-decoration: none; display: block;">
+                    <p style="color: white; margin: 0; font-size: 18px; font-weight: bold;">
+                        🍎 Join PinePods iOS TestFlight Beta!
+                    </p>
+                    <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">
+                        Click here to install PinePods Beta via TestFlight
+                    </p>
+                </a>
             </div>
             {{else}}
             <div class="app-link">

@@ -98,8 +98,35 @@ func (as *ActionService) sendEmailAction(submission *models.FormSubmission, acti
 		return result
 	}
 
-	// Send email
 	emailService := NewEmailService(as.config)
+
+	// Check if this is iOS internal testing - send welcome email immediately
+	if submission.FormID == "internal-testing-signup" {
+		// Check platform
+		platform, platformExists := submission.Data["platform"]
+		if platformExists && platform == "ios" {
+			// For iOS, send welcome email immediately (no manual approval needed)
+			email := emailService.GetEmailFromSubmission(submission)
+			if email == "" {
+				result.Error = "No email address found in submission"
+				result.Message = "Cannot send email: email address missing"
+				return result
+			}
+
+			err := emailService.SendWelcomeEmail(submission, formConfig, email)
+			if err != nil {
+				result.Error = err.Error()
+				result.Message = "Failed to send welcome email"
+				return result
+			}
+
+			result.Success = true
+			result.Message = "iOS welcome email sent immediately (external app access)"
+			return result
+		}
+	}
+
+	// For Android and other platforms, send regular confirmation email
 	err := emailService.SendConfirmationEmail(submission, formConfig)
 	if err != nil {
 		result.Error = err.Error()
