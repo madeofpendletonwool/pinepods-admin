@@ -122,6 +122,9 @@ func (s *Server) setupRoutes() {
 		// Auth routes
 		api.POST("/admin/login", s.adminLogin)
 		
+		// Webhook endpoints (no auth required for external integrations)
+		api.POST("/admin/send-welcome-email", s.sendWelcomeEmail)
+		
 		// Admin routes (require authentication)
 		admin := api.Group("/admin")
 		admin.Use(s.requireAdminAuth())
@@ -130,7 +133,6 @@ func (s *Server) setupRoutes() {
 			admin.GET("/submissions/:id", s.getSubmission)
 			admin.DELETE("/submissions/:id", s.deleteSubmission)
 			admin.POST("/submissions/:id/reprocess", s.reprocessSubmission)
-			admin.POST("/send-welcome-email", s.sendWelcomeEmail)
 			admin.POST("/analytics/cleanup", s.cleanupAnalytics)
 			
 			// Feedback specific routes
