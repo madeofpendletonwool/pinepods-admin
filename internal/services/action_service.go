@@ -132,7 +132,18 @@ func (as *ActionService) sendEmailAction(submission *models.FormSubmission, acti
 		}
 	}
 
-	// For Android and other platforms, send regular confirmation email
+	// For Android internal testing, don't send any automatic email - wait for manual approval
+	if submission.FormID == "internal-testing-signup" {
+		platform, platformExists := submission.Data["platform"]
+		if platformExists && platform == "android" {
+			fmt.Printf("[INFO] Android testing signup received for submission %s - no automatic email sent, waiting for manual approval\n", submission.ID[:8])
+			result.Success = true
+			result.Message = "Android signup processed - awaiting manual approval for welcome email"
+			return result
+		}
+	}
+
+	// For other forms (like contact-form, feedback-form), send regular confirmation email
 	email := emailService.GetEmailFromSubmission(submission)
 	fmt.Printf("[DEBUG] Attempting to send confirmation email to %s for submission %s (platform: %v)\n", email, submission.ID[:8], submission.Data["platform"])
 	
