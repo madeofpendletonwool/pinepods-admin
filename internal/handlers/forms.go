@@ -448,3 +448,15 @@ func generateSessionToken() (string, error) {
 	}
 	return hex.EncodeToString(bytes), nil
 }
+
+func (s *Server) adminLoginPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin-login.html", gin.H{
+		"title": "Admin Login - PinePods",
+	})
+}
+
+func (s *Server) adminDashboardPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin-dashboard.html", gin.H{
+		"title": "Admin Dashboard - PinePods",
+	})
+}

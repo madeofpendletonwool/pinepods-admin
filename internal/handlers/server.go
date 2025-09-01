@@ -144,6 +144,8 @@ func (s *Server) setupRoutes() {
 	s.router.Static("/static", "./static")
 	s.router.LoadHTMLGlob("templates/*")
 	s.router.GET("/", s.indexPage)
+	s.router.GET("/admin-login", s.adminLoginPage)
+	s.router.GET("/admin-dashboard", s.adminDashboardPage)
 }
 
 func (s *Server) Start() error {
