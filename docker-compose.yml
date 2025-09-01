@@ -18,6 +18,11 @@ services:
       # - SMTP_USERNAME=your_email@gmail.com
       # - SMTP_PASSWORD=your_app_password
       # - SMTP_FROM=your_email@gmail.com
+      
+      # Feedback system configuration
+      # - ADMIN_USERNAME=admin
+      # - ADMIN_PASSWORD=your_secure_password
+      # - FEEDBACK_EMAIL=admin@yoursite.com
       - GOOGLE_SERVICE_ACCOUNT_FILE=/app/config/service-account.json
       # - GOOGLE_PACKAGE_NAME=com.your.app
     volumes:
