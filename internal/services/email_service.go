@@ -66,25 +66,6 @@ func (es *EmailService) SendConfirmationEmail(submission *models.FormSubmission,
 	return es.sendEmail(emailData)
 }
 
-// SendFeedbackNotification sends feedback notification email to the admin
-func (es *EmailService) SendFeedbackNotification(submission *models.FormSubmission, recipientEmail string) error {
-	emailData := EmailData{
-		To:         recipientEmail,
-		Subject:    "New Feedback Received - PinePods",
-		Submission: submission,
-		IsHTML:     true,
-	}
-
-	// Generate email body from template
-	body, err := es.renderEmailTemplate("feedback-notification", emailData)
-	if err != nil {
-		return fmt.Errorf("failed to render feedback notification template: %w", err)
-	}
-	emailData.Body = body
-
-	return es.sendEmail(emailData)
-}
-
 func (es *EmailService) SendNotificationEmail(submission *models.FormSubmission, formConfig config.FormConfig, result *models.ProcessingResult) error {
 	// This can be used to send admin notifications
 	// Implementation would be similar to confirmation email
@@ -451,25 +432,6 @@ func (es *EmailService) SendTestEmail(to string) error {
 		Body:    "This is a test email from PinePods Forms service. If you received this, email sending is working correctly!",
 		IsHTML:  false,
 	}
-
-	return es.sendEmail(emailData)
-}
-
-// SendFeedbackNotification sends feedback notification email to the admin
-func (es *EmailService) SendFeedbackNotification(submission *models.FormSubmission, recipientEmail string) error {
-	emailData := EmailData{
-		To:         recipientEmail,
-		Subject:    "New Feedback Received - PinePods",
-		Submission: submission,
-		IsHTML:     true,
-	}
-
-	// Generate email body from template
-	body, err := es.renderEmailTemplate("feedback-notification", emailData)
-	if err != nil {
-		return fmt.Errorf("failed to render feedback notification template: %w", err)
-	}
-	emailData.Body = body
 
 	return es.sendEmail(emailData)
 }
