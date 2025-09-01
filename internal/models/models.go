@@ -62,3 +62,35 @@ type ProcessingResult struct {
 	Actions      []ActionResult `json:"actions"`
 	ProcessedAt  time.Time      `json:"processed_at"`
 }
+
+// PinepodsAnalytics represents analytics data from a Pinepods server
+type PinepodsAnalytics struct {
+	ID         string    `json:"id" db:"id"`
+	ServerHash string    `json:"server_hash" db:"server_hash"`
+	Version    string    `json:"version" db:"version"`
+	FirstSeen  time.Time `json:"first_seen" db:"first_seen"`
+	LastSeen   time.Time `json:"last_seen" db:"last_seen"`
+	IPHash     string    `json:"-" db:"ip_hash"` // Hashed IP for abuse prevention, not returned in JSON
+}
+
+// AnalyticsRequest represents incoming analytics from a Pinepods server
+type AnalyticsRequest struct {
+	ServerHash string `json:"server_hash" binding:"required"`
+	Version    string `json:"version" binding:"required"`
+	Signature  string `json:"signature" binding:"required"` // HMAC signature for verification
+}
+
+// AnalyticsResponse represents the response sent back after analytics submission
+type AnalyticsResponse struct {
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	Timestamp string `json:"timestamp"`
+}
+
+// AnalyticsSummary represents aggregated analytics data for public display
+type AnalyticsSummary struct {
+	TotalServers     int            `json:"total_servers"`
+	ActiveServers    int            `json:"active_servers"`
+	VersionBreakdown map[string]int `json:"version_breakdown"`
+	LastUpdated      time.Time      `json:"last_updated"`
+}

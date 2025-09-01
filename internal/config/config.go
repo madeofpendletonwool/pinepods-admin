@@ -15,6 +15,9 @@ type Config struct {
 	Notifications NotificationConfig `yaml:"notifications"`
 	Forms        FormsConfig        `yaml:"forms"`
 	GooglePlay   GooglePlayConfig   `yaml:"google_play"`
+	Analytics    AnalyticsConfig    `yaml:"analytics"`
+	Admin        AdminConfig        `yaml:"admin"`
+	Feedback     FeedbackConfig     `yaml:"feedback"`
 }
 
 type ServerConfig struct {
@@ -115,6 +118,20 @@ type GooglePlayConfig struct {
 	PackageName        string `yaml:"package_name" env:"GOOGLE_PACKAGE_NAME"`
 }
 
+type AnalyticsConfig struct {
+	Enabled   bool   `yaml:"enabled" env:"ANALYTICS_ENABLED"`
+	SecretKey string `yaml:"secret_key" env:"ANALYTICS_SECRET_KEY"`
+}
+
+type AdminConfig struct {
+	Username string `yaml:"username" env:"ADMIN_USERNAME"`
+	Password string `yaml:"password" env:"ADMIN_PASSWORD"`
+}
+
+type FeedbackConfig struct {
+	RecipientEmail string `yaml:"recipient_email" env:"FEEDBACK_EMAIL"`
+}
+
 // Load reads configuration from file and environment variables
 func Load(configPath string) (*Config, error) {
 	config := &Config{}
@@ -156,6 +173,9 @@ func (c *Config) setDefaults() {
 	c.Email.SMTP.Port = 587
 	
 	c.Forms.StorageDir = "./submissions"
+	
+	c.Analytics.Enabled = true
+	c.Analytics.SecretKey = "change-me-in-production"
 }
 
 func (c *Config) loadFromEnv() {
@@ -231,5 +251,26 @@ func (c *Config) loadFromEnv() {
 	}
 	if packageName := os.Getenv("GOOGLE_PACKAGE_NAME"); packageName != "" {
 		c.GooglePlay.PackageName = packageName
+	}
+	
+	// Analytics env vars
+	if analyticsEnabled := os.Getenv("ANALYTICS_ENABLED"); analyticsEnabled == "false" {
+		c.Analytics.Enabled = false
+	}
+	if analyticsSecret := os.Getenv("ANALYTICS_SECRET_KEY"); analyticsSecret != "" {
+		c.Analytics.SecretKey = analyticsSecret
+	}
+	
+	// Admin env vars
+	if adminUsername := os.Getenv("ADMIN_USERNAME"); adminUsername != "" {
+		c.Admin.Username = adminUsername
+	}
+	if adminPassword := os.Getenv("ADMIN_PASSWORD"); adminPassword != "" {
+		c.Admin.Password = adminPassword
+	}
+	
+	// Feedback env vars
+	if feedbackEmail := os.Getenv("FEEDBACK_EMAIL"); feedbackEmail != "" {
+		c.Feedback.RecipientEmail = feedbackEmail
 	}
 }

@@ -120,6 +120,62 @@ forms:
         subject: "Thank you for contacting us!"
         send_confirmation: true
 
+    feedback-form:
+      name: "Feedback Form"
+      description: "Submit feedback, bug reports, and feature requests"
+      fields:
+        - name: "feedback"
+          type: "textarea"
+          required: true
+          label: "Your Feedback"
+          placeholder: "Tell us what you think, report a bug, or suggest a feature..."
+        - name: "email"
+          type: "email"
+          required: false
+          label: "Email (optional)"
+          placeholder: "your.email@example.com"
+        - name: "platform"
+          type: "select"
+          required: false
+          label: "Platform"
+          placeholder: "web"
+        - name: "category"
+          type: "select"
+          required: false
+          label: "Category"
+          placeholder: "general"
+        - name: "page"
+          type: "text"
+          required: false
+          label: "Page/Feature (optional)"
+          placeholder: "Which page or feature is this about?"
+      actions:
+        - type: "send_feedback_email"
+          config:
+            template: "feedback-notification"
+        - type: "log"
+          config:
+            message: "New feedback submission received"
+      validation:
+        max_submissions_per_hour: 10
+        require_captcha: false
+      email:
+        enabled: true
+        template: "feedback-confirmation"
+        subject: "Thanks for your feedback!"
+        send_confirmation: true
+
 google_play:
   service_account_file: ""  # Set via environment variable GOOGLE_SERVICE_ACCOUNT_FILE
   package_name: ""          # Set via environment variable GOOGLE_PACKAGE_NAME
+
+analytics:
+  enabled: true
+  secret_key: ""            # Set via environment variable ANALYTICS_SECRET_KEY
+
+admin:
+  username: ""              # Set via environment variable ADMIN_USERNAME
+  password: ""              # Set via environment variable ADMIN_PASSWORD
+
+feedback:
+  recipient_email: ""       # Set via environment variable FEEDBACK_EMAIL

@@ -47,6 +47,8 @@ func (as *ActionService) executeAction(submission *models.FormSubmission, action
 		return as.addGooglePlayTester(submission, actionConfig)
 	case "send_email":
 		return as.sendEmailAction(submission, actionConfig)
+	case "send_feedback_email":
+		return as.sendFeedbackEmail(submission, actionConfig)
 	case "webhook":
 		return as.sendWebhook(submission, actionConfig)
 	case "log":
@@ -108,18 +110,22 @@ func (as *ActionService) sendEmailAction(submission *models.FormSubmission, acti
 			// For iOS, send welcome email immediately (no manual approval needed)
 			email := emailService.GetEmailFromSubmission(submission)
 			if email == "" {
+				fmt.Printf("[ERROR] iOS welcome email failed for submission %s: No email address found\n", submission.ID[:8])
 				result.Error = "No email address found in submission"
 				result.Message = "Cannot send email: email address missing"
 				return result
 			}
 
+			fmt.Printf("[DEBUG] Attempting to send iOS welcome email to %s for submission %s\n", email, submission.ID[:8])
 			err := emailService.SendWelcomeEmail(submission, formConfig, email)
 			if err != nil {
+				fmt.Printf("[ERROR] iOS welcome email failed for submission %s to %s: %v\n", submission.ID[:8], email, err)
 				result.Error = err.Error()
 				result.Message = "Failed to send welcome email"
 				return result
 			}
 
+			fmt.Printf("[SUCCESS] iOS welcome email sent automatically to %s for submission %s (external app access)\n", email, submission.ID[:8])
 			result.Success = true
 			result.Message = "iOS welcome email sent immediately (external app access)"
 			return result
@@ -127,15 +133,45 @@ func (as *ActionService) sendEmailAction(submission *models.FormSubmission, acti
 	}
 
 	// For Android and other platforms, send regular confirmation email
+	email := emailService.GetEmailFromSubmission(submission)
+	fmt.Printf("[DEBUG] Attempting to send confirmation email to %s for submission %s (platform: %v)\n", email, submission.ID[:8], submission.Data["platform"])
+	
 	err := emailService.SendConfirmationEmail(submission, formConfig)
 	if err != nil {
+		fmt.Printf("[ERROR] Confirmation email failed for submission %s to %s: %v\n", submission.ID[:8], email, err)
 		result.Error = err.Error()
 		result.Message = "Failed to send email"
 		return result
 	}
 
+	fmt.Printf("[SUCCESS] Confirmation email sent to %s for submission %s\n", email, submission.ID[:8])
 	result.Success = true
 	result.Message = "Email sent successfully"
+	return result
+}
+
+func (as *ActionService) sendFeedbackEmail(submission *models.FormSubmission, actionConfig config.ActionConfig) models.ActionResult {
+	result := models.ActionResult{
+		ActionType: "send_feedback_email",
+		Success:    false,
+	}
+
+	if as.config.Feedback.RecipientEmail == "" {
+		result.Error = "Feedback recipient email not configured"
+		result.Message = "Cannot send feedback: FEEDBACK_EMAIL environment variable not set"
+		return result
+	}
+
+	emailService := NewEmailService(as.config)
+	err := emailService.SendFeedbackNotification(submission, as.config.Feedback.RecipientEmail)
+	if err != nil {
+		result.Error = err.Error()
+		result.Message = "Failed to send feedback notification"
+		return result
+	}
+
+	result.Success = true
+	result.Message = fmt.Sprintf("Feedback notification sent to %s", as.config.Feedback.RecipientEmail)
 	return result
 }
 

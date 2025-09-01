@@ -66,6 +66,25 @@ func (es *EmailService) SendConfirmationEmail(submission *models.FormSubmission,
 	return es.sendEmail(emailData)
 }
 
+// SendFeedbackNotification sends feedback notification email to the admin
+func (es *EmailService) SendFeedbackNotification(submission *models.FormSubmission, recipientEmail string) error {
+	emailData := EmailData{
+		To:         recipientEmail,
+		Subject:    "New Feedback Received - PinePods",
+		Submission: submission,
+		IsHTML:     true,
+	}
+
+	// Generate email body from template
+	body, err := es.renderEmailTemplate("feedback-notification", emailData)
+	if err != nil {
+		return fmt.Errorf("failed to render feedback notification template: %w", err)
+	}
+	emailData.Body = body
+
+	return es.sendEmail(emailData)
+}
+
 func (es *EmailService) SendNotificationEmail(submission *models.FormSubmission, formConfig config.FormConfig, result *models.ProcessingResult) error {
 	// This can be used to send admin notifications
 	// Implementation would be similar to confirmation email
@@ -75,6 +94,110 @@ func (es *EmailService) SendNotificationEmail(submission *models.FormSubmission,
 func (es *EmailService) renderEmailTemplate(templateName string, data EmailData) (string, error) {
 	// Default templates
 	defaultTemplates := map[string]string{
+		"feedback-notification": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New Feedback Received - PinePods</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #FF6B6B; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { padding: 20px; text-align: center; color: #666; }
+        .feedback-box { background-color: white; border: 2px solid #FF6B6B; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .meta-info { background-color: #E8F5E8; padding: 15px; border-left: 4px solid #4CAF50; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 New Feedback Received</h1>
+        </div>
+        <div class="content">
+            <div class="feedback-box">
+                <h2>Feedback Details:</h2>
+                <p><strong>📋 Feedback:</strong></p>
+                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; white-space: pre-wrap;">{{index .Submission.Data "feedback"}}</div>
+                
+                {{if index .Submission.Data "email"}}
+                <p><strong>📧 Contact Email:</strong> {{index .Submission.Data "email"}}</p>
+                {{else}}
+                <p><strong>📧 Contact Email:</strong> <em>Anonymous submission</em></p>
+                {{end}}
+                
+                {{if index .Submission.Data "platform"}}
+                <p><strong>🖥️ Platform:</strong> {{index .Submission.Data "platform"}}</p>
+                {{end}}
+                
+                {{if index .Submission.Data "category"}}
+                <p><strong>🏷️ Category:</strong> {{index .Submission.Data "category"}}</p>
+                {{end}}
+                
+                {{if index .Submission.Data "page"}}
+                <p><strong>📄 Page/Feature:</strong> {{index .Submission.Data "page"}}</p>
+                {{end}}
+            </div>
+            
+            <div class="meta-info">
+                <h3>📊 Submission Information:</h3>
+                <p><strong>Submission ID:</strong> {{.Submission.ID}}</p>
+                <p><strong>Submitted:</strong> {{.Submission.SubmittedAt.Format "2006-01-02 15:04:05 UTC"}}</p>
+                <p><strong>IP Address:</strong> {{.Submission.IPAddress}}</p>
+                <p><strong>User Agent:</strong> {{.Submission.UserAgent}}</p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>🎧 PinePods Feedback System</p>
+        </div>
+    </div>
+</body>
+</html>`,
+		"feedback-confirmation": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Thanks for your feedback!</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { padding: 20px; text-align: center; color: #666; }
+        .highlight { background-color: #E8F5E8; padding: 15px; border-left: 4px solid #4CAF50; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🙏 Thank You for Your Feedback!</h1>
+        </div>
+        <div class="content">
+            <p>Thank you for taking the time to share your feedback with us!</p>
+            
+            <div class="highlight">
+                <p>Your feedback has been successfully received and will help us improve PinePods. We read every piece of feedback and use it to guide our development priorities.</p>
+            </div>
+            
+            {{if index .Submission.Data "email"}}
+            <p>If your feedback requires a response, we'll get back to you at <strong>{{index .Submission.Data "email"}}</strong>.</p>
+            {{end}}
+            
+            <p>Here's what you submitted:</p>
+            <div style="background-color: white; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 4px; white-space: pre-wrap;">{{index .Submission.Data "feedback"}}</div>
+            
+            <p><strong>Submission ID:</strong> {{.Submission.ID}}</p>
+            
+            <p>Want to share more feedback or report another issue? Feel free to submit another form anytime!</p>
+        </div>
+        <div class="footer">
+            <p>🎧 PinePods - Thank you for helping us improve!</p>
+        </div>
+    </div>
+</body>
+</html>`,
 		"confirmation": `
 <!DOCTYPE html>
 <html>
@@ -332,6 +455,25 @@ func (es *EmailService) SendTestEmail(to string) error {
 	return es.sendEmail(emailData)
 }
 
+// SendFeedbackNotification sends feedback notification email to the admin
+func (es *EmailService) SendFeedbackNotification(submission *models.FormSubmission, recipientEmail string) error {
+	emailData := EmailData{
+		To:         recipientEmail,
+		Subject:    "New Feedback Received - PinePods",
+		Submission: submission,
+		IsHTML:     true,
+	}
+
+	// Generate email body from template
+	body, err := es.renderEmailTemplate("feedback-notification", emailData)
+	if err != nil {
+		return fmt.Errorf("failed to render feedback notification template: %w", err)
+	}
+	emailData.Body = body
+
+	return es.sendEmail(emailData)
+}
+
 // GetEmailFromSubmission extracts email address from submission data
 func (es *EmailService) GetEmailFromSubmission(submission *models.FormSubmission) string {
 	// Try different common field names for email
@@ -365,6 +507,25 @@ func (es *EmailService) SendWelcomeEmail(submission *models.FormSubmission, form
 		Body:    body,
 		IsHTML:  true,
 	}
+
+	return es.sendEmail(emailData)
+}
+
+// SendFeedbackNotification sends feedback notification email to the admin
+func (es *EmailService) SendFeedbackNotification(submission *models.FormSubmission, recipientEmail string) error {
+	emailData := EmailData{
+		To:         recipientEmail,
+		Subject:    "New Feedback Received - PinePods",
+		Submission: submission,
+		IsHTML:     true,
+	}
+
+	// Generate email body from template
+	body, err := es.renderEmailTemplate("feedback-notification", emailData)
+	if err != nil {
+		return fmt.Errorf("failed to render feedback notification template: %w", err)
+	}
+	emailData.Body = body
 
 	return es.sendEmail(emailData)
 }

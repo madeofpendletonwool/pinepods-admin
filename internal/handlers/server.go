@@ -13,12 +13,13 @@ import (
 )
 
 type Server struct {
-	config       *config.Config
-	router       *gin.Engine
-	httpServer   *http.Server
-	formService  *services.FormService
-	actionService *services.ActionService
+	config              *config.Config
+	router              *gin.Engine
+	httpServer          *http.Server
+	formService         *services.FormService
+	actionService       *services.ActionService
 	notificationService *services.NotificationService
+	analyticsService    *services.AnalyticsService
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -32,6 +33,7 @@ func NewServer(cfg *config.Config) *Server {
 	formService := services.NewFormService(cfg)
 	actionService := services.NewActionService(cfg)
 	notificationService := services.NewNotificationService(cfg)
+	analyticsService := services.NewAnalyticsService(cfg, formService.GetDB()) // We need to expose the DB
 
 	server := &Server{
 		config:              cfg,
@@ -39,6 +41,7 @@ func NewServer(cfg *config.Config) *Server {
 		formService:         formService,
 		actionService:       actionService,
 		notificationService: notificationService,
+		analyticsService:    analyticsService,
 	}
 
 	server.setupMiddleware()
@@ -109,14 +112,29 @@ func (s *Server) setupRoutes() {
 			forms.GET("/:id/submissions", s.getFormSubmissions)
 		}
 		
-		// Admin routes (optional basic auth)
+		// Analytics routes
+		analytics := api.Group("/analytics")
+		{
+			analytics.POST("/submit", s.submitAnalytics)
+			analytics.GET("/summary", s.getAnalyticsSummary)
+		}
+		
+		// Auth routes
+		api.POST("/admin/login", s.adminLogin)
+		
+		// Admin routes (require authentication)
 		admin := api.Group("/admin")
+		admin.Use(s.requireAdminAuth())
 		{
 			admin.GET("/submissions", s.getAllSubmissions)
 			admin.GET("/submissions/:id", s.getSubmission)
 			admin.DELETE("/submissions/:id", s.deleteSubmission)
 			admin.POST("/submissions/:id/reprocess", s.reprocessSubmission)
 			admin.POST("/send-welcome-email", s.sendWelcomeEmail)
+			admin.POST("/analytics/cleanup", s.cleanupAnalytics)
+			
+			// Feedback specific routes
+			admin.GET("/feedback", s.getFeedbackSubmissions)
 		}
 	}
 

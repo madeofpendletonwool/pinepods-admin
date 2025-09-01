@@ -1,15 +1,21 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/madeofpendletonwool/pinepods-admin/internal/models"
 	"github.com/madeofpendletonwool/pinepods-admin/internal/services"
 )
+
+// Simple in-memory session store (in production, use Redis or similar)
+var activeSessions = make(map[string]time.Time)
 
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -298,4 +304,147 @@ func (s *Server) indexPage(c *gin.Context) {
 		"title": "PinePods Forms",
 		"forms": forms,
 	})
+}
+
+// Admin authentication
+func (s *Server) adminLogin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Success: false,
+			Error:   "Invalid request format",
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	// Check credentials
+	if s.config.Admin.Username == "" || s.config.Admin.Password == "" {
+		c.JSON(http.StatusServiceUnavailable, models.ErrorResponse{
+			Success: false,
+			Error:   "Admin credentials not configured",
+			Code:    http.StatusServiceUnavailable,
+		})
+		return
+	}
+
+	if req.Username != s.config.Admin.Username || req.Password != s.config.Admin.Password {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Success: false,
+			Error:   "Invalid credentials",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	// Generate session token
+	token, err := generateSessionToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Success: false,
+			Error:   "Failed to generate session",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Store session (expires in 24 hours)
+	activeSessions[token] = time.Now().Add(24 * time.Hour)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"token":   token,
+		"message": "Login successful",
+	})
+}
+
+func (s *Server) requireAdminAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+				Success: false,
+				Error:   "Authorization header required",
+				Code:    http.StatusUnauthorized,
+			})
+			c.Abort()
+			return
+		}
+
+		// Extract token from "Bearer <token>" format
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+				Success: false,
+				Error:   "Invalid authorization format",
+				Code:    http.StatusUnauthorized,
+			})
+			c.Abort()
+			return
+		}
+
+		token := parts[1]
+
+		// Check if session exists and is valid
+		expiry, exists := activeSessions[token]
+		if !exists || time.Now().After(expiry) {
+			// Clean up expired session
+			if exists {
+				delete(activeSessions, token)
+			}
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+				Success: false,
+				Error:   "Invalid or expired session",
+				Code:    http.StatusUnauthorized,
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func (s *Server) getFeedbackSubmissions(c *gin.Context) {
+	limitStr := c.DefaultQuery("limit", "50")
+	offsetStr := c.DefaultQuery("offset", "0")
+	
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 50
+	}
+	
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+
+	submissions, err := s.formService.GetFormSubmissions("feedback-form", limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Success: false,
+			Error:   "Failed to retrieve feedback submissions: " + err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"submissions": submissions,
+		"count":       len(submissions),
+		"form_id":     "feedback-form",
+	})
+}
+
+func generateSessionToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

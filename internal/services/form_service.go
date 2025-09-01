@@ -391,6 +391,10 @@ func (fs *FormService) ReprocessSubmission(submission *models.FormSubmission) (*
 	return result, nil
 }
 
+func (fs *FormService) GetDB() *sql.DB {
+	return fs.db
+}
+
 func (fs *FormService) querySubmissions(query string, args ...interface{}) ([]models.FormSubmission, error) {
 	rows, err := fs.db.Query(query, args...)
 	if err != nil {
