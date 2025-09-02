@@ -22,12 +22,12 @@ func NewEmailService(cfg *config.Config) *EmailService {
 }
 
 type EmailData struct {
-	To          string
-	Subject     string
-	Body        string
-	IsHTML      bool
-	Submission  *models.FormSubmission
-	FormConfig  config.FormConfig
+	To         string
+	Subject    string
+	Body       string
+	IsHTML     bool
+	Submission *models.FormSubmission
+	FormConfig config.FormConfig
 }
 
 func (es *EmailService) SendConfirmationEmail(submission *models.FormSubmission, formConfig config.FormConfig) error {
@@ -101,26 +101,26 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                 <h2>Feedback Details:</h2>
                 <p><strong>📋 Feedback:</strong></p>
                 <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; white-space: pre-wrap;">{{index .Submission.Data "feedback"}}</div>
-                
+
                 {{if index .Submission.Data "email"}}
                 <p><strong>📧 Contact Email:</strong> {{index .Submission.Data "email"}}</p>
                 {{else}}
                 <p><strong>📧 Contact Email:</strong> <em>Anonymous submission</em></p>
                 {{end}}
-                
+
                 {{if index .Submission.Data "platform"}}
                 <p><strong>🖥️ Platform:</strong> {{index .Submission.Data "platform"}}</p>
                 {{end}}
-                
+
                 {{if index .Submission.Data "category"}}
                 <p><strong>🏷️ Category:</strong> {{index .Submission.Data "category"}}</p>
                 {{end}}
-                
+
                 {{if index .Submission.Data "page"}}
                 <p><strong>📄 Page/Feature:</strong> {{index .Submission.Data "page"}}</p>
                 {{end}}
             </div>
-            
+
             <div class="meta-info">
                 <h3>📊 Submission Information:</h3>
                 <p><strong>Submission ID:</strong> {{.Submission.ID}}</p>
@@ -157,20 +157,20 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
         </div>
         <div class="content">
             <p>Thank you for taking the time to share your feedback with us!</p>
-            
+
             <div class="highlight">
                 <p>Your feedback has been successfully received and will help us improve PinePods. We read every piece of feedback and use it to guide our development priorities.</p>
             </div>
-            
+
             {{if index .Submission.Data "email"}}
             <p>If your feedback requires a response, we'll get back to you at <strong>{{index .Submission.Data "email"}}</strong>.</p>
             {{end}}
-            
+
             <p>Here's what you submitted:</p>
             <div style="background-color: white; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 4px; white-space: pre-wrap;">{{index .Submission.Data "feedback"}}</div>
-            
+
             <p><strong>Submission ID:</strong> {{.Submission.ID}}</p>
-            
+
             <p>Want to share more feedback or report another issue? Feel free to submit another form anytime!</p>
         </div>
         <div class="footer">
@@ -205,7 +205,7 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
         <div class="content">
             <p>Dear {{index .Submission.Data "name"}},</p>
             <p>We have successfully received your submission for {{.FormConfig.Name}}.</p>
-            
+
             <h3>Submission Details:</h3>
             <table class="data-table">
                 {{range $key, $value := .Submission.Data}}
@@ -215,10 +215,10 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                 </tr>
                 {{end}}
             </table>
-            
+
             <p><strong>Submission ID:</strong> {{.Submission.ID}}</p>
             <p><strong>Submitted at:</strong> {{.Submission.SubmittedAt.Format "2006-01-02 15:04:05 UTC"}}</p>
-            
+
             {{if .FormConfig.Description}}
             <p>{{.FormConfig.Description}}</p>
             {{end}}
@@ -256,9 +256,9 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
         </div>
         <div class="content">
             <p>Hi {{index .Submission.Data "name"}},</p>
-            
+
             <p><strong>Congratulations! You've been added to PinePods internal testing.</strong> This email is your invitation to access the beta version of PinePods.</p>
-            
+
             {{if eq (index .Submission.Data "platform") "ios"}}
             <div class="app-link" style="background-color: #007AFF;">
                 <a href="https://testflight.apple.com/join/8Aax2BcX" target="_blank" style="color: white; text-decoration: none; display: block;">
@@ -272,12 +272,12 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
             </div>
             {{else}}
             <div class="app-link">
-                <a href="https://play.google.com/apps/internaltest/4701694943577309896" target="_blank">
+                <a href="https://play.google.com/apps/testing/com.gooseberrydevelopment.pinepods" target="_blank">
                     📱 Download PinePods Beta from Google Play
                 </a>
             </div>
             {{end}}
-            
+
             <div class="highlight">
                 <h3>🚀 What you get with internal testing:</h3>
                 <ul>
@@ -287,7 +287,7 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                     <li><strong>Community Access:</strong> Connect with other testers and developers</li>
                 </ul>
             </div>
-            
+
             <div class="links">
                 <h3>🔗 Important Links:</h3>
                 <ul>
@@ -295,7 +295,7 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                     <li><strong>Report Issues:</strong> Found a bug or have feedback? <a href="https://github.com/madeofpendletonwool/PinePods/issues" target="_blank">Submit an issue on GitHub</a></li>
                 </ul>
             </div>
-            
+
             <h3>📋 How to Report Mobile App Issues:</h3>
             <ol>
                 <li>Visit our <a href="https://github.com/madeofpendletonwool/PinePods/issues" target="_blank">GitHub Issues page</a></li>
@@ -310,7 +310,7 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                     </ul>
                 </li>
             </ol>
-            
+
             <h3>⚠️ Important Notes:</h3>
             <ul>
                 {{if eq (index .Submission.Data "platform") "ios"}}
@@ -323,11 +323,11 @@ func (es *EmailService) renderEmailTemplate(templateName string, data EmailData)
                 <li>Updates are frequent, so check for new versions regularly</li>
                 <li>Join our Discord for announcements about new beta releases</li>
             </ul>
-            
+
             <p>Thank you for helping us make PinePods better! Your feedback and testing are invaluable to our development process.</p>
-            
+
             <p>Happy podcasting!</p>
-            
+
             <p>Best regards,<br>The PinePods Development Team</p>
         </div>
         <div class="footer">
@@ -399,7 +399,7 @@ Content-Type: %s
 
 	// Send email
 	addr := fmt.Sprintf("%s:%d", es.config.Email.SMTP.Host, es.config.Email.SMTP.Port)
-	
+
 	// Check if we need authentication (for production SMTP servers)
 	var auth smtp.Auth
 	if es.config.Email.SMTP.Username != "" && es.config.Email.SMTP.Password != "" {
@@ -440,7 +440,7 @@ func (es *EmailService) SendTestEmail(to string) error {
 func (es *EmailService) GetEmailFromSubmission(submission *models.FormSubmission) string {
 	// Try different common field names for email
 	emailFields := []string{"email", "email_address", "Email", "Email_Address", "e_mail"}
-	
+
 	for _, field := range emailFields {
 		if email, exists := submission.Data[field]; exists {
 			if emailStr, ok := email.(string); ok && emailStr != "" {
@@ -448,7 +448,7 @@ func (es *EmailService) GetEmailFromSubmission(submission *models.FormSubmission
 			}
 		}
 	}
-	
+
 	return ""
 }
 
